@@ -32,7 +32,6 @@ pub async fn ws_control(
                     #[cfg(feature = "logging")]
                     info!("Received text message");
 
-                    // TODO: handle error
                     serde_json::from_str::<ControlMessage>(&t).unwrap_or(ControlMessage::Fail)
                 }
 
@@ -40,7 +39,6 @@ pub async fn ws_control(
                     #[cfg(feature = "logging")]
                     info!("Received binary message");
 
-                    // TODO: handle error
                     rmp_serde::from_slice::<ControlMessage>(&b).unwrap_or(ControlMessage::Fail)
                 }
 

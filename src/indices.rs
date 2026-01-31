@@ -14,8 +14,6 @@ pub struct Index {
     pub entries: HashMap<u32, String>,
 }
 
-// TODO: needs better refactoring
-
 pub static INDEX: OnceLock<RwLock<Index>> = OnceLock::new();
 
 /// Loads the index from disk and initializes it.

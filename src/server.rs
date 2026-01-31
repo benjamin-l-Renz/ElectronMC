@@ -44,7 +44,6 @@ impl McServer {
         let config: ServerConfig =
             serde_json::from_str(&std::fs::read_to_string(jar_dir.join("config.json"))?)?;
 
-        // TODO: load required java version from server config
         let child = std::process::Command::new(format!(
             "../../runtime/java-{}/bin/java",
             config.java_version

@@ -77,8 +77,6 @@ pub async fn download_server(
             .servers
             .insert(index as i32, McServer::new());
 
-        // TODO: store index and name in db
-
         #[cfg(feature = "logging")]
         info!("finding mc config file");
         let config_dir = project_dir.join("minecraft.json");
