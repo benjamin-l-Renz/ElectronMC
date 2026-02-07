@@ -11,15 +11,15 @@
 - [Features](#features)
 - [Why SubstrateMC](#why-substratemc)
 - [Who is SubstrateMC for](#who-is-substratemc-for)
-- [Why not manual manage servers ?](#why-not-manual-manage-servers)
+- [Why not manual manage servers ?](#why-not-manual-manage-servers-?)
 - [Quick Start](#quick-start)
 - [Contributing](#contributing)
 
 ## Features
 
-- [ x ] Create Minecraft Servers
-- [ x ] Stop Minecraft Servers
-- [ x ] Start Minecraft Servers
+- [x] Create Minecraft Servers
+- [x] Stop Minecraft Servers
+- [x] Start Minecraft Servers
 - [ ] Stream Console Output
 - [ ] Mod Loader Support
 - [ ] Delete Servers
