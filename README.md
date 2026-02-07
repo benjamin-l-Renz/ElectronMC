@@ -17,9 +17,9 @@
 
 ## Features
 
-- [ ] Create Minecraft Servers
-- [ ] Stop Minecraft Servers
-- [ ] Start Minecraft Servers
+- [ x ] Create Minecraft Servers
+- [ x ] Stop Minecraft Servers
+- [ x ] Start Minecraft Servers
 - [ ] Stream Console Output
 - [ ] Mod Loader Support
 - [ ] Delete Servers
