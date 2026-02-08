@@ -1,4 +1,8 @@
-use crate::{api::control_msg::ControlMessage, indices::get_name_by_index, server::Servers};
+use crate::{
+    api::{control_msg::ControlMessage, server_event::ServerEvent},
+    indices::get_name_by_index,
+    server::Servers,
+};
 use actix_web::{
     HttpRequest, HttpResponse,
     web::{self, Payload},
@@ -8,7 +12,7 @@ use futures_util::StreamExt;
 use std::sync::Arc;
 
 #[cfg(feature = "logging")]
-use tracing::{error, info};
+use tracing::{error, info, warn};
 
 use crate::errors::error::ApiError;
 
@@ -20,7 +24,7 @@ pub async fn ws_control(
     body: Payload,
     servers: web::Data<SharedServers>,
 ) -> Result<HttpResponse, ApiError> {
-    let (res, _session, mut msg_stream) = actix_ws::handle(&req, body)?;
+    let (res, mut session, mut msg_stream) = actix_ws::handle(&req, body)?;
 
     let servers = servers.get_ref().clone();
 
@@ -55,6 +59,7 @@ pub async fn ws_control(
                     ControlMessage::StartServer { server_id } => server_id,
                     ControlMessage::StopServer { server_id } => server_id,
                     ControlMessage::GetConsoleOutput { server_id } => server_id,
+                    ControlMessage::SendCommand { server_id, .. } => server_id,
                     ControlMessage::Fail => continue,
                 };
 
@@ -98,10 +103,84 @@ pub async fn ws_control(
                         },
 
                         ControlMessage::GetConsoleOutput { .. } => {
+                            let history = {
+                                let guard = server.history.read().await;
+                                guard.iter().cloned().collect::<Vec<_>>()
+                            };
+
+                            for line in history.iter().rev() {
+                                let event = ServerEvent::ConsoleLine { line };
+                                if session
+                                    .text(serde_json::to_string(&event).unwrap())
+                                    .await
+                                    .is_err()
+                                {
+                                    #[cfg(feature = "logging")]
+                                    warn!("Client disconnected breaking loop");
+
+                                    break;
+                                }
+                            }
+
+                            let mut rx = server.tx.subscribe();
+
+                            let mut session = session.clone();
+
+                            tokio::spawn(async move {
+                                loop {
+                                    match rx.recv().await {
+                                        Ok(line) => {
+                                            let event = ServerEvent::ConsoleLine { line: &line };
+                                            if session
+                                                .text(serde_json::to_string(&event).unwrap())
+                                                .await
+                                                .is_err()
+                                            {
+                                                #[cfg(feature = "logging")]
+                                                warn!("Client disconnected breaking loop");
+
+                                                break;
+                                            }
+                                        }
+
+                                        Err(tokio::sync::broadcast::error::RecvError::Lagged(
+                                            _,
+                                        )) => {
+                                            // client failed to keep up with console output
+
+                                            #[cfg(feature = "logging")]
+                                            warn!("Client couldnt keep up with sender")
+                                        }
+
+                                        Err(e) => {
+                                            #[cfg(feature = "logging")]
+                                            error!("Failed to receive console output: {:?}", e);
+
+                                            eprintln!("Failed to receive console output: {:?}", e);
+                                        }
+                                    }
+                                }
+                            });
+
                             // Access server and send console output
                         }
 
                         ControlMessage::Fail => {}
+
+                        ControlMessage::SendCommand { command, .. } => {
+                            match server.send_command(command).await {
+                                Ok(_) => {
+                                    #[cfg(feature = "logging")]
+                                    info!("Command sent successfully");
+                                }
+                                Err(e) => {
+                                    #[cfg(feature = "logging")]
+                                    error!("Failed to send command: {:?}", e);
+
+                                    eprintln!("Failed to send command: {:?}", e);
+                                }
+                            };
+                        }
                     }
                 }
             }

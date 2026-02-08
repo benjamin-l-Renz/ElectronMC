@@ -1,6 +1,6 @@
 use tokio::{
-    io::{AsyncBufReadExt, BufReader},
-    sync::RwLock,
+    io::{AsyncBufReadExt, AsyncWriteExt, BufReader},
+    sync::{RwLock, broadcast},
 };
 
 use crate::errors::error::ApiError;
@@ -32,15 +32,18 @@ impl PartialEq for ServerState {
 pub struct McServer {
     pub child: ServerState,
     pub history: Arc<RwLock<VecDeque<String>>>,
+    pub tx: broadcast::Sender<String>,
 }
 
 pub const MAX_LINES: usize = 500;
 
 impl McServer {
     pub fn new() -> McServer {
+        let (tx, _) = broadcast::channel(10);
         Self {
             child: ServerState::Stopped,
             history: Arc::new(RwLock::new(VecDeque::with_capacity(MAX_LINES))),
+            tx: tx,
         }
     }
 
@@ -89,6 +92,7 @@ impl McServer {
         if let ServerState::Running(child) = &mut self.child {
             if let Some(stdout) = child.stdout.take() {
                 let history = self.history.clone();
+                let console_tx = self.tx.clone();
 
                 tokio::spawn(async move {
                     let mut reader = BufReader::new(stdout);
@@ -102,10 +106,10 @@ impl McServer {
                             if hist.len() > MAX_LINES {
                                 hist.pop_back();
                             }
-                            hist.push_front(line_to_store);
-
-                            line.clear();
+                            hist.push_front(line_to_store.clone());
                         }
+
+                        let _ = console_tx.send(line_to_store);
                     }
                 });
             }
@@ -114,5 +118,18 @@ impl McServer {
 
     pub async fn clear_history(&mut self) {
         self.history.write().await.clear();
+    }
+
+    pub async fn send_command(&mut self, command: &str) -> Result<(), ApiError> {
+        if let ServerState::Running(child) = &mut self.child {
+            let command = format!("{}{}", command, "\n");
+            child
+                .stdin
+                .as_mut()
+                .ok_or(ApiError::InternalServerError)?
+                .write_all(command.as_bytes())
+                .await?;
+        }
+        Ok(())
     }
 }

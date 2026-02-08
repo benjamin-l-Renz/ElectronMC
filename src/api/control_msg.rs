@@ -6,6 +6,7 @@ pub enum ControlMessage {
     StartServer { server_id: u32 },
     StopServer { server_id: u32 },
     GetConsoleOutput { server_id: u32 },
+    SendCommand { server_id: u32, command: String },
     Fail,
 }
 
