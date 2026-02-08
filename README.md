@@ -52,6 +52,8 @@ SubstrateMC is designed for running multiple Minecraft servers and easily contro
 
 Install SubstrateMC over the github releases or build it yourself.
 
+> **SubstrateMC doesnt support windows just yet. Support for windows is planned**
+
 Run the binary and make sure every config is supplied
 
 ````bash

@@ -43,7 +43,7 @@ impl McServer {
         Self {
             child: ServerState::Stopped,
             history: Arc::new(RwLock::new(VecDeque::with_capacity(MAX_LINES))),
-            tx: tx,
+            tx,
         }
     }
 
@@ -89,30 +89,30 @@ impl McServer {
     }
 
     pub fn listen_to_server(&mut self) {
-        if let ServerState::Running(child) = &mut self.child {
-            if let Some(stdout) = child.stdout.take() {
-                let history = self.history.clone();
-                let console_tx = self.tx.clone();
+        if let ServerState::Running(child) = &mut self.child
+            && let Some(stdout) = child.stdout.take()
+        {
+            let history = self.history.clone();
+            let console_tx = self.tx.clone();
 
-                tokio::spawn(async move {
-                    let mut reader = BufReader::new(stdout);
-                    let mut line = String::with_capacity(512);
+            tokio::spawn(async move {
+                let mut reader = BufReader::new(stdout);
+                let mut line = String::with_capacity(512);
 
-                    while reader.read_line(&mut line).await.unwrap() > 0 {
-                        let line_to_store = std::mem::take(&mut line);
-                        {
-                            let mut hist = history.write().await;
+                while reader.read_line(&mut line).await.unwrap() > 0 {
+                    let line_to_store = std::mem::take(&mut line);
+                    {
+                        let mut hist = history.write().await;
 
-                            if hist.len() > MAX_LINES {
-                                hist.pop_back();
-                            }
-                            hist.push_front(line_to_store.clone());
+                        if hist.len() > MAX_LINES {
+                            hist.pop_back();
                         }
-
-                        let _ = console_tx.send(line_to_store);
+                        hist.push_front(line_to_store.clone());
                     }
-                });
-            }
+
+                    let _ = console_tx.send(line_to_store);
+                }
+            });
         }
     }
 
