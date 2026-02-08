@@ -20,7 +20,7 @@
 - [x] Create Minecraft Servers
 - [x] Stop Minecraft Servers
 - [x] Start Minecraft Servers
-- [ ] Stream Console Output
+- [x] Stream Console Output
 - [ ] Mod Loader Support
 - [ ] Delete Servers
 - [ ] Editing Configs
