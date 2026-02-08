@@ -6,6 +6,7 @@ use tokio::{
 use crate::errors::error::ApiError;
 use std::{
     collections::{HashMap, VecDeque},
+    process::Stdio,
     sync::Arc,
 };
 
@@ -39,7 +40,7 @@ pub const MAX_LINES: usize = 500;
 
 impl McServer {
     pub fn new() -> McServer {
-        let (tx, _) = broadcast::channel(10);
+        let (tx, _) = broadcast::channel(1024);
         Self {
             child: ServerState::Stopped,
             history: Arc::new(RwLock::new(VecDeque::with_capacity(MAX_LINES))),
@@ -67,6 +68,8 @@ impl McServer {
         .arg("server.jar")
         .arg("nogui")
         .current_dir(jar_dir)
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
         .spawn()?;
 
         self.child = ServerState::Running(child);
@@ -107,6 +110,7 @@ impl McServer {
                         if hist.len() > MAX_LINES {
                             hist.pop_back();
                         }
+ 
                         hist.push_front(line_to_store.clone());
                     }
 

@@ -78,9 +78,7 @@ pub async fn ws_control(
                     match &resp {
                         ControlMessage::StartServer { .. } => {
                             match server.start_server(&name).await {
-                                Ok(_) => {
-                                    server.listen_to_server();
-                                }
+                                Ok(_) => {}
                                 Err(e) => {
                                     #[cfg(feature = "logging")]
                                     error!("Failed to start server: {:?}", e);
@@ -88,6 +86,8 @@ pub async fn ws_control(
                                     eprintln!("Failed to start server {}: {:?}", name, e);
                                 }
                             }
+
+                            server.listen_to_server();
                         }
 
                         ControlMessage::StopServer { .. } => match server.stop_server().await {

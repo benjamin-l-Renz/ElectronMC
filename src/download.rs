@@ -15,7 +15,7 @@ static HTTP_CLIENT: Lazy<reqwest::Client> = Lazy::new(|| {
         Err(err) => {
             #[cfg(feature = "logging")]
             error!("Failed to create HTTP client: {}", err);
-            panic!("Failed to create HTTP client: {}", err)
+            panic!("Failed to create HTTP client: {}", err);
         }
     }
 });
